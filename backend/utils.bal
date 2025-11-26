@@ -34,5 +34,13 @@ public isolated function getUserInfo(string email) returns entity:Employee|error
         }
     }
 
-    return entity:fetchEmployeesBasicInfo(email);
+    entity:Employee|error? employee = entity:fetchEmployeesBasicInfo(email);
+    if employee is entity:Employee {
+        error? cacheResult = userInfoCache.put(email, employee);
+        if cacheResult is error {
+            log:printWarn(string `Failed to cache user data for: ${email}`, cacheResult);
+        }
+    }
+
+    return employee;
 }

@@ -17,7 +17,7 @@ import { Colors } from "@/constants/Colors";
 import { ScreenPaths } from "@/constants/ScreenPaths";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { Animated, StyleSheet, View } from "react-native";
 
 const SPARKLE_COUNT = 1;
@@ -33,7 +33,10 @@ const generateSparkle = () => ({
 });
 
 const SparkleIcon = () => {
-  const sparkles = Array.from({ length: SPARKLE_COUNT }, generateSparkle);
+  const sparkles = useMemo(
+    () => Array.from({ length: SPARKLE_COUNT }, generateSparkle),
+    []
+  );
 
   return (
     <View style={styles.container}>

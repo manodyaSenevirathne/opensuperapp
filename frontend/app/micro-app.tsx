@@ -319,7 +319,7 @@ const MicroApp = () => {
   };
 
   // Function to upload data to the Google Drive
-  const handledUploadToGoogleDrive = async (data: any = {}) => {
+  const handleUploadToGoogleDrive = async (data: any = {}) => {
     uploadToGoogleDrive(data)
       .then((res) => {
         if (res.id) {
@@ -349,7 +349,7 @@ const MicroApp = () => {
   };
 
   // Function to restore the latest backup from Google Drive
-  const RestoreLatestFromGoogleDrive = async () => {
+  const restoreLatestFromGoogleDrive = async () => {
     restoreGoogleDriveBackup()
       .then((res) => {
         if (res) {
@@ -511,10 +511,10 @@ const MicroApp = () => {
           authenticateWithGoogle();
           break;
         case TOPIC.UPLOAD_TO_GOOGLE_DRIVE:
-          handledUploadToGoogleDrive(data);
+          handleUploadToGoogleDrive(data);
           break;
         case TOPIC.RESTORE_GOOGLE_DRIVE_BACKUP:
-          RestoreLatestFromGoogleDrive();
+          restoreLatestFromGoogleDrive();
           break;
         case TOPIC.CHECK_GOOGLE_AUTH_STATE:
           handleCheckGoogleAuthState();

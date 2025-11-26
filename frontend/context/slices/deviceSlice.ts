@@ -152,6 +152,9 @@ const deviceSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      .addCase(disableFCMToken.fulfilled, (state, action) => {
+        state.lastSentFCMToken = null;
+      })
       .addCase(loadLastSentFCMToken.fulfilled, (state, action) => {
         state.lastSentFCMToken = action.payload;
       })

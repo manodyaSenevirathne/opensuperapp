@@ -42,7 +42,7 @@ func (h *UserConfigHandler) GetAppConfigs(w http.ResponseWriter, r *http.Request
 			Email:       config.Email,
 			ConfigKey:   config.ConfigKey,
 			ConfigValue: config.ConfigValue,
-			Active:      config.Active,
+			IsActive:    config.Active,
 		})
 	}
 
@@ -77,15 +77,15 @@ func (h *UserConfigHandler) UpsertAppConfig(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if req.Active == 0 {
-		req.Active = 1
+	if req.IsActive == 0 {
+		req.IsActive = 1
 	}
 
 	config := models.UserConfig{}
 	result := h.db.Where("email = ? AND config_key = ?", userInfo.Email, req.ConfigKey).
 		Assign(models.UserConfig{
 			ConfigValue: req.ConfigValue,
-			Active:      req.Active,
+			Active:      req.IsActive,
 			UpdatedBy:   userInfo.Email,
 		}).
 		Attrs(models.UserConfig{

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"crypto/subtle"
 	"encoding/json"
 	"log/slog"
 	"net/http"
@@ -119,7 +120,7 @@ func (h *OAuthHandler) Token(w http.ResponseWriter, r *http.Request) {
 
 	// Verify Secret (Hash comparison)
 	hashedSecret := hashSecret(clientSecret)
-	if hashedSecret != OAuth2client.ClientSecret {
+	if subtle.ConstantTimeCompare([]byte(hashedSecret), []byte(OAuth2client.ClientSecret)) != 1 {
 		slog.Warn("Invalid client secret", "client_id", clientID)
 		writeError(w, http.StatusUnauthorized, errInvalidClient, "")
 		return

@@ -14,6 +14,6 @@ type UserService interface {
 	DeleteUser(email string) error
 }
 
-// Registry is the global registry for FileService implementations.
+// Registry is the global registry for UserService implementations.
 // Implementations should register themselves in their init() functions.
 var Registry = registry.New[UserService]()

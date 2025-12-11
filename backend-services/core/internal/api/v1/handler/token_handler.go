@@ -21,7 +21,8 @@ import (
 )
 
 const (
-	defaultHTTPTimeout = 10 * time.Second
+	defaultHTTPTimeout   = 10 * time.Second
+	IdPResponseBodyLimit = 1 << 20 // 1MB
 
 	// HTTP Headers and Content Types
 	headerContentType  = "Content-Type"
@@ -215,7 +216,8 @@ func (h *TokenHandler) ProxyOAuthToken(w http.ResponseWriter, r *http.Request) {
 	defer resp.Body.Close()
 
 	// Read response
-	body, err := io.ReadAll(resp.Body)
+	limitedBody := io.LimitReader(resp.Body, IdPResponseBodyLimit)
+	body, err := io.ReadAll(limitedBody)
 	if err != nil {
 		slog.Error("Failed to read IDP response", "error", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)

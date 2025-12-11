@@ -26,7 +26,7 @@ func Connect(cfg *config.Config) *gorm.DB {
 		}
 		slog.Warn("Failed to connect to database, retrying...",
 			"attempt", i+1, "max", cfg.DBConnectRetries, "error", err)
-		time.Sleep(time.Duration(i+1) * 2 * time.Second) // Exponential backoff
+		time.Sleep(time.Duration(1<<uint(i)) * 2 * time.Second) // Exponential backoff
 	}
 
 	if err != nil {

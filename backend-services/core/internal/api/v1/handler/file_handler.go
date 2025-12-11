@@ -113,9 +113,9 @@ func (h *FileHandler) DownloadMicroAppFile(w http.ResponseWriter, r *http.Reques
 		http.Error(w, "Error occurred while retrieving Micro App file", http.StatusInternalServerError)
 		return
 	}
-
+	safeFileName := sanitizeForHeader(fileName)
 	w.Header().Set("Content-Type", "application/octet-stream")
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", fileName))
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", safeFileName))
 	w.WriteHeader(http.StatusOK)
 
 	if _, err := w.Write(content); err != nil {

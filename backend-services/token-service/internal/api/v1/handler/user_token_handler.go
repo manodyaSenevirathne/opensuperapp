@@ -40,12 +40,12 @@ func (h *OAuthHandler) GenerateUserToken(w http.ResponseWriter, r *http.Request)
 
 	token, err := h.tokenService.GenerateUserToken(userEmail, microappID, scope)
 	if err != nil {
-		slog.Error("Failed to generate user token", "error", err, "user", userEmail, "microapp", microappID)
+		slog.Error("Failed to generate user token", "error", err, "microapp", microappID)
 		writeError(w, http.StatusInternalServerError, errServerError, "")
 		return
 	}
 
-	slog.Info("User token generated", "user", userEmail, "microapp", microappID)
+	slog.Info("User token generated", "microapp", microappID)
 
 	resp := TokenResponse{
 		AccessToken: token,

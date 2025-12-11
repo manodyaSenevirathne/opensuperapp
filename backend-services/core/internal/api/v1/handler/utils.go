@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"mime"
 	"net/http"
+	"strings"
+	"unicode"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -51,4 +53,13 @@ func limitRequestBody(w http.ResponseWriter, r *http.Request, maxBytes int64) {
 		maxBytes = defaultMaxRequestBodySize
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, maxBytes)
+}
+
+func sanitizeForHeader(s string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsControl(r) || r == '"' || r == '\'' {
+			return -1 // drop the rune
+		}
+		return r
+	}, s)
 }

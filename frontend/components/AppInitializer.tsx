@@ -28,6 +28,7 @@ import { performLogout } from "@/utils/performLogout";
 import { initializeTelemetry } from "@/telemetry/telemetryService";
 import { recordAppStartTime } from "@/telemetry/metrics";
 import { buildAppsWithTokens } from "@/utils/exchangedTokenRehydrator";
+import { handleFreshInstall } from "@/utils/freshInstall";
 
 /**
  * Component to handle app initialization
@@ -45,6 +46,9 @@ function AppInitializer({ onReady }: { onReady: () => void }) {
       const startTime = Date.now();
       
       try {
+        // Check for fresh install and clear stale SecureStore data
+        await handleFreshInstall();
+        
         // Initialize telemetry first
         await initializeTelemetry();
 

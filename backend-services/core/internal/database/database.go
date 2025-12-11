@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"time"
 
-	"go-backend/internal/config"
+	"github.com/opensuperapp/opensuperapp/backend-services/core/internal/config"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"

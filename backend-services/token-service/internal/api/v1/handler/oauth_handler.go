@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"go-idp/internal/models"
-	"go-idp/internal/services"
+	"github.com/opensuperapp/opensuperapp/backend-services/token-service/internal/models"
+	"github.com/opensuperapp/opensuperapp/backend-services/token-service/internal/services"
 
 	"gorm.io/gorm"
 )

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	fileservice "go-backend/plugins/file-service"
+	fileservice "github.com/opensuperapp/opensuperapp/backend-services/core/plugins/file-service"
 
 	"gorm.io/gorm"
 )

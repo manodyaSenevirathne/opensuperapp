@@ -3,8 +3,8 @@ package router
 import (
 	"net/http"
 
-	"go-idp/internal/api/v1/handler"
-	"go-idp/internal/services"
+	"github.com/opensuperapp/opensuperapp/backend-services/token-service/internal/api/v1/handler"
+	"github.com/opensuperapp/opensuperapp/backend-services/token-service/internal/services"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"

@@ -1,8 +1,8 @@
 package userservice
 
 import (
-	"go-backend/internal/models"
-	"go-backend/internal/registry"
+	"github.com/opensuperapp/opensuperapp/backend-services/core/internal/models"
+	"github.com/opensuperapp/opensuperapp/backend-services/core/internal/registry"
 )
 
 // UserService defines the interface for user-related operations.

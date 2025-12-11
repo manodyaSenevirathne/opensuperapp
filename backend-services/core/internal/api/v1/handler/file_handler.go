@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	fileservice "go-backend/plugins/file-service"
+	fileservice "github.com/opensuperapp/opensuperapp/backend-services/core/plugins/file-service"
 
 	"github.com/go-chi/chi/v5"
 )

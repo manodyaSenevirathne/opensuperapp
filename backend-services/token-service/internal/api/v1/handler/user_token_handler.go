@@ -14,7 +14,7 @@ type UserTokenRequest struct {
 }
 
 // GenerateUserToken generates a microapp-scoped token with user context
-// This is called by go-backend when exchanging user tokens
+// This is called by the core service when exchanging user tokens
 func (h *OAuthHandler) GenerateUserToken(w http.ResponseWriter, r *http.Request) {
 	limitRequestBody(w, r, 0)
 

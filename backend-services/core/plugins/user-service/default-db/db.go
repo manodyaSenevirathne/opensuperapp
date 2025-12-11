@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"log/slog"
 
-	"go-backend/internal/models"
+	"github.com/opensuperapp/opensuperapp/backend-services/core/internal/models"
 
-	userservice "go-backend/plugins/user-service"
+	userservice "github.com/opensuperapp/opensuperapp/backend-services/core/plugins/user-service"
 
 	"gorm.io/gorm"
 )

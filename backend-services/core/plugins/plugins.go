@@ -7,6 +7,6 @@ import (
 	// -------------------------------------------------------------------------
 
 	// Default Implementations
-	_ "go-backend/plugins/file-service/default-db"
-	_ "go-backend/plugins/user-service/default-db"
+	_ "github.com/opensuperapp/opensuperapp/backend-services/core/plugins/file-service/default-db"
+	_ "github.com/opensuperapp/opensuperapp/backend-services/core/plugins/user-service/default-db"
 )

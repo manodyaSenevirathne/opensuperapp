@@ -3,7 +3,7 @@ package handler
 import (
 	"net/http"
 
-	"go-idp/internal/services"
+	"github.com/opensuperapp/opensuperapp/backend-services/token-service/internal/services"
 )
 
 type KeyHandler struct {

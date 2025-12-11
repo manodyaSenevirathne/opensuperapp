@@ -3,12 +3,12 @@ package router
 import (
 	"net/http"
 
-	"go-backend/internal/api/v1/handler"
-	"go-backend/internal/config"
-	"go-backend/internal/services"
+	"github.com/opensuperapp/opensuperapp/backend-services/core/internal/api/v1/handler"
+	"github.com/opensuperapp/opensuperapp/backend-services/core/internal/config"
+	"github.com/opensuperapp/opensuperapp/backend-services/core/internal/services"
 
-	fileservice "go-backend/plugins/file-service"
-	userservice "go-backend/plugins/user-service"
+	fileservice "github.com/opensuperapp/opensuperapp/backend-services/core/plugins/file-service"
+	userservice "github.com/opensuperapp/opensuperapp/backend-services/core/plugins/user-service"
 
 	"github.com/go-chi/chi/v5"
 	"gorm.io/gorm"

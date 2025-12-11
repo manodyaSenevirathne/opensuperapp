@@ -11,8 +11,8 @@ import (
 	"strings"
 	"testing"
 
-	"go-idp/internal/models"
-	"go-idp/internal/services"
+	"github.com/opensuperapp/opensuperapp/backend-services/token-service/internal/models"
+	"github.com/opensuperapp/opensuperapp/backend-services/token-service/internal/services"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"

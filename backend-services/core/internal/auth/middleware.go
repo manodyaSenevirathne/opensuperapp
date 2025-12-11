@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"go-backend/internal/services"
+	"github.com/opensuperapp/opensuperapp/backend-services/core/internal/services"
 )
 
 const (

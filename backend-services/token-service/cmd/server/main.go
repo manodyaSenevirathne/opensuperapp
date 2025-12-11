@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"os"
 
-	"go-idp/internal/api/v1/router"
-	"go-idp/internal/config"
-	"go-idp/internal/services"
+	"github.com/opensuperapp/opensuperapp/backend-services/token-service/internal/api/v1/router"
+	"github.com/opensuperapp/opensuperapp/backend-services/token-service/internal/config"
+	"github.com/opensuperapp/opensuperapp/backend-services/token-service/internal/services"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"

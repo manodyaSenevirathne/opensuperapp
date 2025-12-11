@@ -6,11 +6,11 @@ import (
 	"log/slog"
 	"net/http"
 
-	"go-backend/internal/api/v1/dto"
-	"go-backend/internal/auth"
-	"go-backend/internal/models"
+	"github.com/opensuperapp/opensuperapp/backend-services/core/internal/api/v1/dto"
+	"github.com/opensuperapp/opensuperapp/backend-services/core/internal/auth"
+	"github.com/opensuperapp/opensuperapp/backend-services/core/internal/models"
 
-	userservice "go-backend/plugins/user-service"
+	userservice "github.com/opensuperapp/opensuperapp/backend-services/core/plugins/user-service"
 
 	"github.com/go-chi/chi/v5"
 	"gorm.io/gorm"

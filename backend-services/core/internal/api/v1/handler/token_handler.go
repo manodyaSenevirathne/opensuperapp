@@ -11,11 +11,11 @@ import (
 	"net/url"
 	"time"
 
-	"go-backend/internal/api/v1/dto"
-	"go-backend/internal/auth"
-	"go-backend/internal/config"
-	"go-backend/internal/models"
-	"go-backend/internal/services"
+	"github.com/opensuperapp/opensuperapp/backend-services/core/internal/api/v1/dto"
+	"github.com/opensuperapp/opensuperapp/backend-services/core/internal/auth"
+	"github.com/opensuperapp/opensuperapp/backend-services/core/internal/config"
+	"github.com/opensuperapp/opensuperapp/backend-services/core/internal/models"
+	"github.com/opensuperapp/opensuperapp/backend-services/core/internal/services"
 
 	"gorm.io/gorm"
 )

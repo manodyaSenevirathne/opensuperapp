@@ -1,7 +1,7 @@
 package fileservice
 
 import (
-	"go-backend/internal/registry"
+	"github.com/opensuperapp/opensuperapp/backend-services/core/internal/registry"
 )
 
 // FileService defines the interface for file management operations.

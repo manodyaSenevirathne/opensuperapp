@@ -5,11 +5,11 @@ import (
 	"log/slog"
 	"net/http"
 
-	"go-backend/internal/config"
-	"go-backend/internal/database"
-	"go-backend/internal/router"
+	"github.com/opensuperapp/opensuperapp/backend-services/core/internal/config"
+	"github.com/opensuperapp/opensuperapp/backend-services/core/internal/database"
+	"github.com/opensuperapp/opensuperapp/backend-services/core/internal/router"
 
-	_ "go-backend/plugins"
+	_ "github.com/opensuperapp/opensuperapp/backend-services/core/plugins"
 )
 
 func main() {

@@ -4,14 +4,14 @@ import (
 	"log/slog"
 	"net/http"
 
-	v1 "go-backend/internal/api/v1/router"
-	"go-backend/internal/auth"
-	"go-backend/internal/config"
-	"go-backend/internal/services"
+	v1 "github.com/opensuperapp/opensuperapp/backend-services/core/internal/api/v1/router"
+	"github.com/opensuperapp/opensuperapp/backend-services/core/internal/auth"
+	"github.com/opensuperapp/opensuperapp/backend-services/core/internal/config"
+	"github.com/opensuperapp/opensuperapp/backend-services/core/internal/services"
 
 	// pluggable services
-	fileservice "go-backend/plugins/file-service"
-	userservice "go-backend/plugins/user-service"
+	fileservice "github.com/opensuperapp/opensuperapp/backend-services/core/plugins/file-service"
+	userservice "github.com/opensuperapp/opensuperapp/backend-services/core/plugins/user-service"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"

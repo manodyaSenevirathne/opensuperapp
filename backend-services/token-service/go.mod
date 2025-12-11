@@ -1,4 +1,4 @@
-module go-idp
+module github.com/opensuperapp/opensuperapp/backend-services/token-service
 
 go 1.25.4
 

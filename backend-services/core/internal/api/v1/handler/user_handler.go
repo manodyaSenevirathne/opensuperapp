@@ -120,6 +120,11 @@ func (h *UserHandler) Upsert(w http.ResponseWriter, r *http.Request) {
 	requests, isBulk, err := parseUpsertPayload(r.Body)
 	if err != nil {
 		slog.Error("Invalid request body for upsert", "error", err)
+		var maxBytesErr *http.MaxBytesError
+		if errors.As(err, &maxBytesErr) {
+			http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
+			return
+		}
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}

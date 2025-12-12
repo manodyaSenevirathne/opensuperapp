@@ -16,6 +16,7 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -25,6 +26,7 @@ import (
 	fileservice "github.com/opensuperapp/opensuperapp/backend-services/core/plugins/file-service"
 
 	"github.com/go-chi/chi/v5"
+	"gorm.io/gorm"
 )
 
 const (
@@ -117,9 +119,14 @@ func (h *FileHandler) DeleteFile(w http.ResponseWriter, r *http.Request) {
 // DownloadMicroAppFile handles public file download
 // Note: This handler is only called when FileServiceType is "db", so the service will always be database as the file service
 func (h *FileHandler) DownloadMicroAppFile(w http.ResponseWriter, r *http.Request) {
-	fileName := filepath.Base(chi.URLParam(r, "fileName"))
-	if fileName == "" {
+	rawFileName := chi.URLParam(r, "fileName")
+	if rawFileName == "" {
 		http.Error(w, "fileName parameter is required", http.StatusBadRequest)
+		return
+	}
+	fileName := filepath.Base(rawFileName)
+	if fileName == "." || fileName == ".." {
+		http.Error(w, "invalid fileName", http.StatusBadRequest)
 		return
 	}
 
@@ -131,6 +138,10 @@ func (h *FileHandler) DownloadMicroAppFile(w http.ResponseWriter, r *http.Reques
 
 	content, err := dbService.GetBlobContent(fileName)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			http.Error(w, "file not found", http.StatusNotFound)
+			return
+		}
 		slog.Error("Error occurred while retrieving Micro App file", "error", err, "fileName", fileName)
 		http.Error(w, "Error occurred while retrieving Micro App file", http.StatusInternalServerError)
 		return

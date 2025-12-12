@@ -16,7 +16,9 @@
 package handler
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -126,7 +128,10 @@ func (h *UserHandler) Upsert(w http.ResponseWriter, r *http.Request) {
 	if !valid {
 		return
 	}
-
+	if len(users) == 0 {
+		http.Error(w, "empty request body", http.StatusBadRequest)
+		return
+	}
 	// Bulk user upsert
 	if isBulk {
 		if err := h.userService.UpsertUsers(users); err != nil {

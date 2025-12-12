@@ -19,9 +19,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
+	"mime"
 	"net/http"
 	"net/url"
 	"time"
@@ -102,8 +104,10 @@ func (h *TokenHandler) ExchangeToken(w http.ResponseWriter, r *http.Request) {
 
 	// Validate that the microapp exists and is active
 	var microapp models.MicroApp
-	if err := h.db.Where("micro_app_id = ? AND active = ?", req.MicroappID, models.StatusActive).First(&microapp).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+	if err := h.db.WithContext(r.Context()).
+		Where("micro_app_id = ? AND active = ?", req.MicroappID, models.StatusActive).
+		First(&microapp).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			slog.Warn("Microapp not found or inactive", "microappID", req.MicroappID, "user", userInfo.Email)
 			http.Error(w, "microapp not found or inactive", http.StatusNotFound)
 		} else {
@@ -142,6 +146,7 @@ func (h *TokenHandler) ProxyOAuthToken(w http.ResponseWriter, r *http.Request) {
 	var forwardBody string
 
 	contentType := r.Header.Get(headerContentType)
+	mediaType, _, _ := mime.ParseMediaType(contentType)
 
 	// Check for Basic Auth header first (recommended OAuth2 method)
 	basicUser, basicPass, hasBasicAuth := r.BasicAuth()
@@ -151,40 +156,49 @@ func (h *TokenHandler) ProxyOAuthToken(w http.ResponseWriter, r *http.Request) {
 		clientID = basicUser
 		clientSecret = basicPass
 
-		// Parse form for grant_type only
+		// Parse form to get all parameters
 		if err := r.ParseForm(); err != nil {
 			http.Error(w, "invalid form data", http.StatusBadRequest)
 			return
 		}
 		grantType = r.FormValue(paramGrantType)
 
-		// Build form body with all credentials for forwarding
-		formData := url.Values{}
+		// Forward all original params + inject credentials (preserve scope, refresh_token, audience, etc.)
+		formData := r.Form
 		formData.Set(paramGrantType, grantType)
 		formData.Set("client_id", clientID)
 		formData.Set("client_secret", clientSecret)
 		forwardBody = formData.Encode()
 
-	} else if contentType == contentTypeJSON || contentType == "application/json" {
-		// JSON body
-		var reqBody struct {
-			GrantType    string `json:"grant_type"`
-			ClientID     string `json:"client_id"`
-			ClientSecret string `json:"client_secret"`
-		}
+	} else if mediaType == contentTypeJSON {
+		// JSON body - parse as map to preserve all fields
+		var reqBody map[string]any
 		if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
 			http.Error(w, "invalid request body", http.StatusBadRequest)
 			return
 		}
-		clientID = reqBody.ClientID
-		clientSecret = reqBody.ClientSecret
-		grantType = reqBody.GrantType
+
+		// Extract required fields
+		if v, ok := reqBody["client_id"].(string); ok {
+			clientID = v
+		}
+		if v, ok := reqBody["client_secret"].(string); ok {
+			clientSecret = v
+		}
+		if v, ok := reqBody["grant_type"].(string); ok {
+			grantType = v
+		}
 
 		// Build form body for forwarding (token service accepts form data)
+		// Preserve all fields including scope, refresh_token, audience, etc.
 		formData := url.Values{}
-		formData.Set(paramGrantType, grantType)
-		formData.Set("client_id", clientID)
-		formData.Set("client_secret", clientSecret)
+		for k, v := range reqBody {
+			vs, ok := v.(string)
+			if !ok || vs == "" {
+				continue
+			}
+			formData.Set(k, vs)
+		}
 		forwardBody = formData.Encode()
 
 	} else {

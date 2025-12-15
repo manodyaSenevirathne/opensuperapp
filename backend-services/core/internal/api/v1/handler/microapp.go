@@ -17,6 +17,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"slices"
@@ -125,7 +126,7 @@ func (h *MicroAppHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		Preload("Roles", "active = ?", models.StatusActive).
 		Preload("Configs", "active = ?", models.StatusActive).
 		First(&app).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			http.Error(w, "micro app not found", http.StatusNotFound)
 		} else {
 			slog.Error("Failed to fetch micro app", "error", err, "appID", id)
@@ -298,7 +299,7 @@ func (h *MicroAppHandler) Deactivate(w http.ResponseWriter, r *http.Request) {
 
 	var app models.MicroApp
 	if err := h.db.Where("micro_app_id = ?", id).First(&app).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			http.Error(w, "micro app not found", http.StatusNotFound)
 		} else {
 			slog.Error("Failed to fetch micro app", "error", err, "appID", id)

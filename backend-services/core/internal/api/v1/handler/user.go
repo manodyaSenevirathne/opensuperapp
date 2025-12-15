@@ -175,7 +175,7 @@ func (h *UserHandler) Delete(w http.ResponseWriter, r *http.Request) {
 
 	err := h.userService.DeleteUser(email)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			http.Error(w, "user not found", http.StatusNotFound)
 		} else {
 			slog.Error("Failed to delete user", "error", err, "email", email)

@@ -46,7 +46,7 @@ func (h *KeyHandler) GetJWKS(w http.ResponseWriter, r *http.Request) {
 // ReloadKeys triggers a reload of the keys from the directory
 func (h *KeyHandler) ReloadKeys(w http.ResponseWriter, r *http.Request) {
 	if err := h.tokenService.ReloadKeys(); err != nil {
-		http.Error(w, "Failed to reload keys: "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Failed to reload keys", http.StatusInternalServerError)
 		return
 	}
 
@@ -63,7 +63,7 @@ func (h *KeyHandler) SetActiveKey(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.tokenService.SetActiveKey(keyID); err != nil {
-		http.Error(w, "Failed to set active key: "+err.Error(), http.StatusBadRequest)
+		http.Error(w, "Failed to set active key", http.StatusBadRequest)
 		return
 	}
 

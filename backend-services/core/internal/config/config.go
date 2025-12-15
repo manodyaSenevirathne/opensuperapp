@@ -82,11 +82,11 @@ func Load() *Config {
 	}
 
 	cfg := &Config{
-		DBUser:            getEnv("DB_USER", "root"),
-		DBPassword:        getEnvRequired("DB_PASSWORD"), // Required
-		DBHost:            getEnv("DB_HOST", "localhost"),
-		DBPort:            getEnv("DB_PORT", "3306"),
-		DBName:            getEnv("DB_NAME", "testdb"),
+		DBUser:            getEnvRequired("DB_USER"),
+		DBPassword:        getEnvRequired("DB_PASSWORD"),
+		DBHost:            getEnvRequired("DB_HOST"),
+		DBPort:            getEnvRequired("DB_PORT"),
+		DBName:            getEnvRequired("DB_NAME"),
 		DBMaxOpenConns:    getEnvInt("DB_MAX_OPEN_CONNS", 25),
 		DBMaxIdleConns:    getEnvInt("DB_MAX_IDLE_CONNS", 5),
 		DBConnMaxLifetime: getEnvInt("DB_CONN_MAX_LIFETIME_MIN", 30),

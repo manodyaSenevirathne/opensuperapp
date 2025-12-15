@@ -28,5 +28,5 @@ type TokenValidator interface {
 
 // NotificationService defines the interface for sending notifications
 type NotificationService interface {
-	SendNotificationToMultiple(ctx context.Context, tokens []string, title string, body string, data map[string]string) (int, int, error)
+	SendMulticastNotification(ctx context.Context, tokens []string, title string, body string, data map[string]string) (int, int, error)
 }

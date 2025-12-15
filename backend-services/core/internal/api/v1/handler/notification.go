@@ -36,11 +36,6 @@ const (
 
 	// Data Keys
 	dataKeyMicroappID = "microappId"
-
-	// FCM Config
-	fcmSoundDefault   = "default"
-	fcmChannelDefault = "default"
-	fcmPriorityHigh   = "high"
 )
 
 type NotificationHandler struct {
@@ -146,7 +141,7 @@ func (h *NotificationHandler) SendNotification(w http.ResponseWriter, r *http.Re
 	}
 	dataStr := h.prepareFCMData(req.Data, microappID)
 
-	successCount, failureCount, err := h.fcmService.SendNotificationToMultiple(r.Context(), tokens, req.Title, req.Body, dataStr)
+	successCount, failureCount, err := h.fcmService.SendMulticastNotification(r.Context(), tokens, req.Title, req.Body, dataStr)
 
 	if err != nil {
 		slog.Error("Failed to send notifications", "error", err)

@@ -74,8 +74,8 @@ func NewFCMService(credentialsPath string) (*FCMService, error) {
 	return &FCMService{client: client}, nil
 }
 
-// SendNotificationToMultiple sends a notification to multiple devices
-func (s *FCMService) SendNotificationToMultiple(
+// SendMulticastNotification sends a notification to multiple devices
+func (s *FCMService) SendMulticastNotification(
 	ctx context.Context,
 	tokens []string,
 	title string,

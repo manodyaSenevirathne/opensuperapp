@@ -34,10 +34,6 @@ import (
 	"gorm.io/gorm"
 )
 
-const (
-	userRequestBodyLimit = 1 << 20 // 1MB default limit
-)
-
 type UserHandler struct {
 	userService userservice.UserService
 }
@@ -50,26 +46,22 @@ func NewUserHandler(userService userservice.UserService) *UserHandler {
 
 // GetUserInfo retrieves the currently logged-in user's information.
 func (h *UserHandler) GetUserInfo(w http.ResponseWriter, r *http.Request) {
-	// Get user info from context (set by auth middleware)
 	userInfo, ok := auth.GetUserInfo(r.Context())
 	if !ok {
-		http.Error(w, "user info not found in context", http.StatusUnauthorized)
+		http.Error(w, errUserInfoNotFound, http.StatusUnauthorized)
 		return
 	}
-
 	user, err := h.userService.GetUserByEmail(userInfo.Email)
 	if err != nil {
 		slog.Error("Failed to fetch user info", "error", err, "email", userInfo.Email)
-		http.Error(w, "failed to fetch user information", http.StatusInternalServerError)
+		http.Error(w, errFailedToFetchUserInfo, http.StatusInternalServerError)
 		return
 	}
-
 	if user == nil {
 		slog.Warn("User not found", "email", userInfo.Email)
-		http.Error(w, "user not found", http.StatusNotFound)
+		http.Error(w, errUserNotFound, http.StatusNotFound)
 		return
 	}
-
 	response := dto.UserResponse{
 		Email:         user.Email,
 		FirstName:     user.FirstName,
@@ -77,10 +69,9 @@ func (h *UserHandler) GetUserInfo(w http.ResponseWriter, r *http.Request) {
 		UserThumbnail: user.UserThumbnail,
 		Location:      user.Location,
 	}
-
 	if err := writeJSON(w, http.StatusOK, response); err != nil {
 		slog.Error("Failed to write JSON response", "error", err)
-		http.Error(w, "failed to write response", http.StatusInternalServerError)
+		http.Error(w, errFailedToWriteResponse, http.StatusInternalServerError)
 	}
 }
 
@@ -89,10 +80,9 @@ func (h *UserHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	users, err := h.userService.GetAllUsers()
 	if err != nil {
 		slog.Error("Failed to fetch all users", "error", err)
-		http.Error(w, "failed to fetch users", http.StatusInternalServerError)
+		http.Error(w, errFailedToFetchUsers, http.StatusInternalServerError)
 		return
 	}
-
 	response := make([]dto.UserResponse, 0, len(users))
 	for _, user := range users {
 		response = append(response, dto.UserResponse{
@@ -103,10 +93,9 @@ func (h *UserHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 			Location:      user.Location,
 		})
 	}
-
 	if err := writeJSON(w, http.StatusOK, response); err != nil {
 		slog.Error("Failed to write JSON response", "error", err)
-		http.Error(w, "failed to write response", http.StatusInternalServerError)
+		http.Error(w, errFailedToWriteResponse, http.StatusInternalServerError)
 	}
 }
 
@@ -115,51 +104,46 @@ func (h *UserHandler) Upsert(w http.ResponseWriter, r *http.Request) {
 	if !validateContentType(w, r) {
 		return
 	}
-
 	limitRequestBody(w, r, userRequestBodyLimit)
-
 	requests, isBulk, err := parseUpsertPayload(r.Body)
 	if err != nil {
 		slog.Error("Invalid request body for upsert", "error", err)
 		var maxBytesErr *http.MaxBytesError
 		if errors.As(err, &maxBytesErr) {
-			http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
+			http.Error(w, errRequestBodyTooLarge, http.StatusRequestEntityTooLarge)
 			return
 		}
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+		http.Error(w, errInvalidRequestBody, http.StatusBadRequest)
 		return
 	}
-
 	users, valid := convertAndValidateRequests(w, requests)
 	if !valid {
 		return
 	}
 	if len(users) == 0 {
-		http.Error(w, "empty request body", http.StatusBadRequest)
+		http.Error(w, errEmptyRequestBody, http.StatusBadRequest)
 		return
 	}
 	// Bulk user upsert
 	if isBulk {
 		if err := h.userService.UpsertUsers(users); err != nil {
 			slog.Error("Failed to upsert bulk users", "error", err, "count", len(users))
-			http.Error(w, "failed to upsert bulk users", http.StatusInternalServerError)
+			http.Error(w, errFailedToUpsertBulkUsers, http.StatusInternalServerError)
 			return
 		}
-		if err := writeJSON(w, http.StatusCreated, map[string]string{"message": "Users created/updated successfully"}); err != nil {
+		if err := writeJSON(w, http.StatusCreated, map[string]string{"message": msgUsersBulkSuccess}); err != nil {
 			slog.Error("Failed to write JSON response", "error", err)
 		}
 		return
 	}
-
 	// Single user upsert
 	if err := h.userService.UpsertUser(users[0]); err != nil {
 		slog.Error("Failed to upsert user", "error", err, "email", users[0].Email)
-		http.Error(w, "failed to upsert user", http.StatusInternalServerError)
+		http.Error(w, errFailedToUpsertUser, http.StatusInternalServerError)
 		return
 	}
-
 	if err := writeJSON(w, http.StatusCreated, map[string]string{
-		"message": "User created/updated successfully",
+		"message": msgUserUpsertSuccess,
 	}); err != nil {
 		slog.Error("Failed to write JSON response", "error", err)
 	}
@@ -167,26 +151,24 @@ func (h *UserHandler) Upsert(w http.ResponseWriter, r *http.Request) {
 
 // Delete removes a user by their email address.
 func (h *UserHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	email := chi.URLParam(r, "email")
+	email := chi.URLParam(r, paramEmail)
 	if email == "" {
-		http.Error(w, "missing email parameter", http.StatusBadRequest)
+		http.Error(w, errMissingEmailParameter, http.StatusBadRequest)
 		return
 	}
-
 	err := h.userService.DeleteUser(email)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			http.Error(w, "user not found", http.StatusNotFound)
+			http.Error(w, errUserNotFound, http.StatusNotFound)
 		} else {
 			slog.Error("Failed to delete user", "error", err, "email", email)
-			http.Error(w, "failed to delete user", http.StatusInternalServerError)
+			http.Error(w, errFailedToDeleteUser, http.StatusInternalServerError)
 		}
 		return
 	}
-
-	if err := writeJSON(w, http.StatusOK, map[string]string{"message": "User deleted successfully"}); err != nil {
+	if err := writeJSON(w, http.StatusOK, map[string]string{"message": msgUserDeleteSuccess}); err != nil {
 		slog.Error("Failed to write JSON response", "error", err)
-		http.Error(w, "failed to write response", http.StatusInternalServerError)
+		http.Error(w, errFailedToWriteResponse, http.StatusInternalServerError)
 	}
 }
 
@@ -199,7 +181,6 @@ func parseUpsertPayload(body io.ReadCloser) ([]dto.UpsertUserRequest, bool, erro
 	if err := json.NewDecoder(body).Decode(&rawBody); err != nil {
 		return nil, false, err
 	}
-
 	trimmed := bytes.TrimSpace(rawBody)
 	if len(trimmed) == 0 {
 		return nil, false, fmt.Errorf("empty request body")
@@ -212,7 +193,6 @@ func parseUpsertPayload(body io.ReadCloser) ([]dto.UpsertUserRequest, bool, erro
 		}
 		return requests, true, nil
 	}
-
 	// Single object
 	var request dto.UpsertUserRequest
 	if err := json.Unmarshal(trimmed, &request); err != nil {
@@ -225,12 +205,10 @@ func parseUpsertPayload(body io.ReadCloser) ([]dto.UpsertUserRequest, bool, erro
 // Returns the converted users and whether validation succeeded.
 func convertAndValidateRequests(w http.ResponseWriter, reqs []dto.UpsertUserRequest) ([]*models.User, bool) {
 	users := make([]*models.User, 0, len(reqs))
-
 	for _, r := range reqs {
 		if !validateStruct(w, &r) {
 			return nil, false
 		}
-
 		users = append(users, &models.User{
 			Email:         r.Email,
 			FirstName:     r.FirstName,
@@ -239,6 +217,5 @@ func convertAndValidateRequests(w http.ResponseWriter, reqs []dto.UpsertUserRequ
 			Location:      r.Location,
 		})
 	}
-
 	return users, true
 }

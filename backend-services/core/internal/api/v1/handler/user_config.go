@@ -37,20 +37,17 @@ func NewUserConfigHandler(db *gorm.DB) *UserConfigHandler {
 
 // GetAppConfigs retrieves all active configurations for the logged-in user
 func (h *UserConfigHandler) GetAppConfigs(w http.ResponseWriter, r *http.Request) {
-	// Get user info from context (set by auth middleware)
 	userInfo, ok := auth.GetUserInfo(r.Context())
 	if !ok {
-		http.Error(w, "user info not found in context", http.StatusUnauthorized)
+		http.Error(w, errUserInfoNotFound, http.StatusUnauthorized)
 		return
 	}
-
 	var configs []models.UserConfig
 	if err := h.db.Where("email = ? AND active = ?", userInfo.Email, 1).Find(&configs).Error; err != nil {
 		slog.Error("Failed to fetch user configs", "error", err, "email", userInfo.Email)
-		http.Error(w, "failed to fetch user configurations", http.StatusInternalServerError)
+		http.Error(w, errFailedToFetchUserConfigs, http.StatusInternalServerError)
 		return
 	}
-
 	var response []dto.UserConfigResponse
 	for _, config := range configs {
 		response = append(response, dto.UserConfigResponse{
@@ -60,42 +57,35 @@ func (h *UserConfigHandler) GetAppConfigs(w http.ResponseWriter, r *http.Request
 			IsActive:    config.Active,
 		})
 	}
-
 	if err := writeJSON(w, http.StatusOK, response); err != nil {
 		slog.Error("Failed to write JSON response", "error", err)
-		http.Error(w, "failed to write response", http.StatusInternalServerError)
+		http.Error(w, errFailedToWriteResponse, http.StatusInternalServerError)
 	}
 }
 
 // UpsertAppConfig creates or updates a user configuration
 func (h *UserConfigHandler) UpsertAppConfig(w http.ResponseWriter, r *http.Request) {
-	// Get user info from context (set by auth middleware)
 	userInfo, ok := auth.GetUserInfo(r.Context())
 	if !ok {
-		http.Error(w, "user info not found in context", http.StatusUnauthorized)
+		http.Error(w, errUserInfoNotFound, http.StatusUnauthorized)
 		return
 	}
-
 	if !validateContentType(w, r) {
 		return
 	}
-
 	limitRequestBody(w, r, 0) // 1MB default limit
 	var req dto.UpsertUserConfigRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+		http.Error(w, errInvalidRequestBody, http.StatusBadRequest)
 		return
 	}
 
-	// Validate request
 	if !validateStruct(w, &req) {
 		return
 	}
-
 	if req.IsActive == 0 {
 		req.IsActive = 1
 	}
-
 	config := models.UserConfig{}
 	result := h.db.Where("email = ? AND config_key = ?", userInfo.Email, req.ConfigKey).
 		Assign(models.UserConfig{
@@ -109,15 +99,13 @@ func (h *UserConfigHandler) UpsertAppConfig(w http.ResponseWriter, r *http.Reque
 			ConfigValue: req.ConfigValue,
 			CreatedBy:   userInfo.Email,
 		}).FirstOrCreate(&config)
-
 	if result.Error != nil {
 		slog.Error("Failed to upsert user config", "error", result.Error, "email", userInfo.Email, "configKey", req.ConfigKey)
-		http.Error(w, "failed to upsert user configuration", http.StatusInternalServerError)
+		http.Error(w, errFailedToUpsertUserConfig, http.StatusInternalServerError)
 		return
 	}
-
-	if err := writeJSON(w, http.StatusCreated, map[string]string{"message": "Configuration updated successfully"}); err != nil {
+	if err := writeJSON(w, http.StatusCreated, map[string]string{"message": msgConfigurationUpdatedSuccessfully}); err != nil {
 		slog.Error("Failed to write JSON response", "error", err)
-		http.Error(w, "failed to write response", http.StatusInternalServerError)
+		http.Error(w, errFailedToWriteResponse, http.StatusInternalServerError)
 	}
 }

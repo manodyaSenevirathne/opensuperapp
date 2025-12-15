@@ -17,6 +17,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 
@@ -38,47 +39,40 @@ func NewMicroAppVersionHandler(db *gorm.DB) *MicroAppVersionHandler {
 
 // UpsertVersion handles creating or updating a version for a micro app
 func (h *MicroAppVersionHandler) UpsertVersion(w http.ResponseWriter, r *http.Request) {
-	// Get user info from context (set by auth middleware)
 	userInfo, ok := auth.GetUserInfo(r.Context())
 	if !ok {
-		http.Error(w, "user info not found in context", http.StatusUnauthorized)
+		http.Error(w, errUserInfoNotFound, http.StatusUnauthorized)
 		return
 	}
 	userEmail := userInfo.Email
-
-	appID := chi.URLParam(r, "appID")
+	appID := chi.URLParam(r, urlParamAppID)
 	if appID == "" {
-		http.Error(w, "missing micro_app_id", http.StatusBadRequest)
+		http.Error(w, errMissingMicroAppID, http.StatusBadRequest)
 		return
 	}
-
 	var microApp models.MicroApp
 	if err := h.db.Where("micro_app_id = ?", appID).First(&microApp).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			http.Error(w, "micro app not found", http.StatusNotFound)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			slog.Error("Failed to fetch micro app", "error", err, "appID", appID)
+			http.Error(w, errMicroAppNotFound, http.StatusNotFound)
 		} else {
 			slog.Error("Failed to fetch micro app", "error", err, "appID", appID)
-			http.Error(w, "failed to fetch micro app", http.StatusInternalServerError)
+			http.Error(w, errFailedToFetchMicroApp, http.StatusInternalServerError)
 		}
 		return
 	}
-
 	if !validateContentType(w, r) {
 		return
 	}
-
-	limitRequestBody(w, r, 0) // 1MB default limit
+	limitRequestBody(w, r, 0)
 	var req dto.CreateMicroAppVersionRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+		http.Error(w, errInvalidRequestBody, http.StatusBadRequest)
 		return
 	}
-
-	// Validate request
 	if !validateStruct(w, &req) {
 		return
 	}
-
 	version := models.MicroAppVersion{}
 	result := h.db.Where("micro_app_id = ? AND version = ? AND build = ?", appID, req.Version, req.Build).
 		Assign(models.MicroAppVersion{
@@ -97,10 +91,9 @@ func (h *MicroAppVersionHandler) UpsertVersion(w http.ResponseWriter, r *http.Re
 
 	if result.Error != nil {
 		slog.Error("Failed to upsert version", "error", result.Error, "appID", appID, "version", req.Version, "build", req.Build)
-		http.Error(w, "failed to upsert version", http.StatusInternalServerError)
+		http.Error(w, errFailedToUpsertVersion, http.StatusInternalServerError)
 		return
 	}
-
 	if err := writeJSON(w, http.StatusCreated, dto.MicroAppVersionResponse{
 		ID:           version.ID,
 		MicroAppID:   version.MicroAppID,
@@ -112,6 +105,6 @@ func (h *MicroAppVersionHandler) UpsertVersion(w http.ResponseWriter, r *http.Re
 		Active:       version.Active,
 	}); err != nil {
 		slog.Error("Failed to write JSON response", "error", err)
-		http.Error(w, "failed to write response", http.StatusInternalServerError)
+		http.Error(w, errFailedToWriteResponse, http.StatusInternalServerError)
 	}
 }

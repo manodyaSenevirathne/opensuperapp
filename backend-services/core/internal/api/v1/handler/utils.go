@@ -26,10 +26,6 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-const (
-	defaultMaxRequestBodySize = 1 << 20 // 1MB
-)
-
 var validate = validator.New()
 
 // Writes the given data as JSON to the HTTP response with the specified status code.

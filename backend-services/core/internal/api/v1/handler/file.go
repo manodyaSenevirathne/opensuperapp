@@ -29,17 +29,16 @@ import (
 	"gorm.io/gorm"
 )
 
+type fileUploadResponse struct {
+	Message     string `json:"message"`
+	DownloadURL string `json:"downloadUrl"`
+}
+
 type FileHandler struct {
 	fileService   fileservice.FileService
 	maxUploadSize int64 // Maximum upload size in bytes
 }
 
-// DBFileService interface since this handler is db-specific
-type DBFileService interface {
-	GetBlobContent(fileName string) ([]byte, error)
-}
-
-// NewFileHandler creates a new FileHandler with the specified file service and max upload size.
 func NewFileHandler(fileService fileservice.FileService, maxUploadSizeMB int) *FileHandler {
 	return &FileHandler{
 		fileService:   fileService,
@@ -47,110 +46,106 @@ func NewFileHandler(fileService fileservice.FileService, maxUploadSizeMB int) *F
 	}
 }
 
-// UploadFile handles file upload via binary body
 func (h *FileHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
-	fileName := r.URL.Query().Get("fileName")
-	fileName = filepath.Base(fileName) // Sanitize: strip directory components
-	if fileName == "." || fileName == ".." {
-		http.Error(w, "invalid fileName", http.StatusBadRequest)
+	fileName, err := validateFileName(r.URL.Query().Get(QueryParamFileName))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if fileName == "" {
-		http.Error(w, "fileName query parameter is required", http.StatusBadRequest)
-		return
-	}
-
-	// Defense-in-depth: limit request body size
 	r.Body = http.MaxBytesReader(w, r.Body, h.maxUploadSize)
 	content, err := io.ReadAll(r.Body)
 	if err != nil {
-		slog.Error("Error reading file content from request body", "error", err)
-		http.Error(w, "error in reading file content from request body", http.StatusBadRequest)
+		slog.Error(errReadingBody, "error", err)
+		http.Error(w, errReadingBody, http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
-
 	if len(content) == 0 {
-		http.Error(w, "file content is empty", http.StatusBadRequest)
+		http.Error(w, errFileContentEmpty, http.StatusBadRequest)
 		return
 	}
-
 	downloadURL, err := h.fileService.UploadFile(fileName, content)
 	if err != nil {
-		slog.Error("Error uploading file", "error", err, "fileName", fileName)
-		http.Error(w, "error uploading file", http.StatusInternalServerError)
+		slog.Error(errUploadingFile, "error", err, "fileName", fileName)
+		http.Error(w, errUploadingFile, http.StatusInternalServerError)
 		return
 	}
-
-	response := map[string]string{
-		"message":     "File uploaded successfully.",
-		"downloadUrl": downloadURL,
+	response := fileUploadResponse{
+		Message:     msgSuccessFileUpload,
+		DownloadURL: downloadURL,
 	}
-
 	if err := writeJSON(w, http.StatusCreated, response); err != nil {
-		slog.Error("Failed to write JSON response", "error", err)
-		http.Error(w, "failed to write response", http.StatusInternalServerError)
+		slog.Error(errFailedToWriteResponse, "error", err)
+		http.Error(w, errFailedToWriteResponse, http.StatusInternalServerError)
 	}
 }
 
 // DeleteFile handles file deletion by fileName
 func (h *FileHandler) DeleteFile(w http.ResponseWriter, r *http.Request) {
-	fileName := filepath.Base(r.URL.Query().Get("fileName"))
-	if fileName == "." || fileName == ".." {
-		http.Error(w, "invalid fileName", http.StatusBadRequest)
-		return
-	}
-	if fileName == "" {
-		http.Error(w, "fileName query parameter is required", http.StatusBadRequest)
-		return
-	}
-
-	err := h.fileService.DeleteFile(fileName)
+	fileName, err := validateFileName(r.URL.Query().Get(QueryParamFileName))
 	if err != nil {
-		slog.Error("Error deleting file", "error", err, "fileName", fileName)
-		http.Error(w, "error deleting file", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
+	err = h.fileService.DeleteFile(fileName)
+	if err != nil {
+		slog.Error(errDeletingFile, "error", err, "fileName", fileName)
+		http.Error(w, errDeletingFile, http.StatusInternalServerError)
+		return
+	}
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// DownloadMicroAppFile handles public file download
-// Note: This handler is only called when FileServiceType is "db", so the service will always be database as the file service
-func (h *FileHandler) DownloadMicroAppFile(w http.ResponseWriter, r *http.Request) {
-	rawFileName := chi.URLParam(r, "fileName")
-	if rawFileName == "" {
-		http.Error(w, "fileName parameter is required", http.StatusBadRequest)
-		return
-	}
-	fileName := filepath.Base(rawFileName)
-	if fileName == "." || fileName == ".." {
-		http.Error(w, "invalid fileName", http.StatusBadRequest)
-		return
-	}
+// Note: This handler is only called when FileServiceType is "db",
+//
+//	so the service will always be database as the file service.
+type DBFileService interface {
+	GetBlobContent(fileName string) ([]byte, error)
+}
 
+// DownloadMicroAppFile handles public file download
+func (h *FileHandler) DownloadMicroAppFile(w http.ResponseWriter, r *http.Request) {
+	fileName, err := validateFileName(chi.URLParam(r, QueryParamFileName))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	dbService, ok := h.fileService.(DBFileService)
 	if !ok {
-		http.Error(w, "This endpoint only works with DB file service", http.StatusInternalServerError)
+		http.Error(w, errDBfileService, http.StatusInternalServerError)
 		return
 	}
-
 	content, err := dbService.GetBlobContent(fileName)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			http.Error(w, "file not found", http.StatusNotFound)
+			http.Error(w, errFileNotFound, http.StatusNotFound)
 			return
 		}
-		slog.Error("Error occurred while retrieving Micro App file", "error", err, "fileName", fileName)
-		http.Error(w, "Error occurred while retrieving Micro App file", http.StatusInternalServerError)
+		slog.Error(errDownloadingFile, "error", err, "fileName", fileName)
+		http.Error(w, errDownloadingFile, http.StatusInternalServerError)
 		return
 	}
 	safeFileName := sanitizeForHeader(fileName)
-	w.Header().Set("Content-Type", "application/octet-stream")
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", safeFileName))
+	w.Header().Set(contentTypeHeader, applicationOctetStream)
+	w.Header().Set(contentDisposition, fmt.Sprintf("attachment; filename=\"%s\"", safeFileName))
 	w.WriteHeader(http.StatusOK)
-
 	if _, err := w.Write(content); err != nil {
-		slog.Error("Failed to write file content", "error", err, "fileName", fileName)
+		slog.Error(errFailedToWriteResponse, "error", err, "fileName", fileName)
 	}
+}
+
+// helper functions
+
+// validateFileName checks if the provided fileName is non-empty and sanitizes it by extracting the base name.
+// It returns an error if the fileName is empty or resolves to "." or ".." after sanitization.
+// The function returns the sanitized file name if valid, otherwise an appropriate error.
+func validateFileName(fileName string) (string, error) {
+	if fileName == "" {
+		return "", errors.New(errQueryParamMissing)
+	}
+	sanitized := filepath.Base(fileName)
+	if sanitized == "." || sanitized == ".." {
+		return "", errors.New(errInvalidFileName)
+	}
+	return sanitized, nil
 }

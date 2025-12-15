@@ -108,7 +108,7 @@ func MicroAppRoutes(db *gorm.DB) http.Handler {
 }
 
 // DeviceTokenRoutes sets up a sub-router for device token endpoints
-func DeviceTokenRoutes(db *gorm.DB, fcmService services.NotificationService) http.Handler {
+func deviceTokenRoutes(db *gorm.DB, fcmService services.NotificationService) http.Handler {
 	r := chi.NewRouter()
 
 	notificationHandler := handler.NewNotificationHandler(db, fcmService)

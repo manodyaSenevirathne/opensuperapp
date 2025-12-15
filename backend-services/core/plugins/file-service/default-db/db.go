@@ -26,6 +26,8 @@ import (
 	"gorm.io/gorm"
 )
 
+// MicroAppFile represents a file stored in the database.
+// Files are stored with their name as the primary key and content as a BLOB.
 type MicroAppFile struct {
 	FileName    string `gorm:"column:file_name;primaryKey;type:varchar(255)"`
 	BlobContent []byte `gorm:"column:blob_content;type:mediumblob;not null"`
@@ -35,6 +37,8 @@ func (MicroAppFile) TableName() string {
 	return "micro_apps_storage"
 }
 
+// DBFileService implements the FileService interface using a database backend.
+// It stores file content in a MySQL table and generates download URLs based on a base URL.
 type DBFileService struct {
 	db      *gorm.DB
 	baseURL string
@@ -60,6 +64,14 @@ func New(config map[string]any) (fileservice.FileService, error) {
 	return &DBFileService{db: globalDB, baseURL: baseURL}, nil
 }
 
+// UploadFile stores or updates a file in the database.
+// If a file with the same name already exists, it will be overwritten.
+//
+// Parameters:
+//   - fileName: The name of the file (max 255 characters, required)
+//   - content: The file content as bytes (nil is treated as empty content)
+//
+// Returns the download URL for the file or an error if the operation fails.
 func (s *DBFileService) UploadFile(fileName string, content []byte) (string, error) {
 	slog.Info("Upserting file", "fileName", fileName, "size", len(content))
 
@@ -92,7 +104,13 @@ func (s *DBFileService) UploadFile(fileName string, content []byte) (string, err
 	return downloadUrl, nil
 }
 
-// DeleteFile removes a file from the database by fileName
+// DeleteFile removes a file from the database by fileName.
+// Returns gorm.ErrRecordNotFound if the file doesn't exist.
+//
+// Parameters:
+//   - fileName: The name of the file to delete
+//
+// Returns an error if the deletion fails or if no file was found.
 func (s *DBFileService) DeleteFile(fileName string) error {
 	slog.Info("Deleting file", "fileName", fileName)
 
@@ -112,7 +130,13 @@ func (s *DBFileService) DeleteFile(fileName string) error {
 	return nil
 }
 
-// GetDownloadURL generates the download URL for a file
+// GetDownloadURL generates the download URL for a file.
+// The URL is constructed using the base URL configured during service initialization.
+//
+// Parameters:
+//   - fileName: The name of the file (required)
+//
+// Returns the full download URL with the fileName properly escaped for use in a URL path.
 func (s *DBFileService) GetDownloadURL(fileName string) (string, error) {
 	if s.baseURL == "" {
 		return "", fmt.Errorf("DBFileService: FILE_SERVICE_BACKEND_BASE_URL is required")
@@ -123,7 +147,13 @@ func (s *DBFileService) GetDownloadURL(fileName string) (string, error) {
 	return fmt.Sprintf("%s/public/micro-app-files/download/%s", s.baseURL, url.PathEscape(fileName)), nil
 }
 
-// GetBlobContent retrieves the blob content of a file by fileName
+// GetBlobContent retrieves the blob content of a file by fileName.
+// Returns gorm.ErrRecordNotFound if the file doesn't exist.
+//
+// Parameters:
+//   - fileName: The name of the file to retrieve
+//
+// Returns the file content as bytes or an error if retrieval fails.
 func (s *DBFileService) GetBlobContent(fileName string) ([]byte, error) {
 	slog.Info("Retrieving blob content", "fileName", fileName)
 

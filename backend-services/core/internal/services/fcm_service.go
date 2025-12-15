@@ -375,47 +375,6 @@ func getProjectIDFromCredentials(credentialsPath string) (string, error) {
 }
 
 // contains checks if a string contains a substring using case-insensitive comparison.
-//
-// This is a helper function that performs case-insensitive substring matching
-// without relying on the strings package, useful for error message pattern matching.
-//
-// Parameters:
-//   - s: The string to search in
-//   - substr: The substring to search for
-//
-// Returns:
-//   - bool: true if substr is found in s (case-insensitive), false otherwise
 func contains(s, substr string) bool {
-	sLower := ""
-	substrLower := ""
-
-	// Manual lowercase conversion
-	for _, c := range s {
-		if c >= 'A' && c <= 'Z' {
-			sLower += string(c + 32)
-		} else {
-			sLower += string(c)
-		}
-	}
-
-	for _, c := range substr {
-		if c >= 'A' && c <= 'Z' {
-			substrLower += string(c + 32)
-		} else {
-			substrLower += string(c)
-		}
-	}
-
-	// Check if substring exists in string
-	if len(substrLower) > len(sLower) {
-		return false
-	}
-
-	for i := 0; i <= len(sLower)-len(substrLower); i++ {
-		if sLower[i:i+len(substrLower)] == substrLower {
-			return true
-		}
-	}
-
-	return false
+	return strings.Contains(strings.ToLower(s), strings.ToLower(substr))
 }

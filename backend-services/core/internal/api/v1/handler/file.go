@@ -29,12 +29,9 @@ import (
 	"gorm.io/gorm"
 )
 
-const (
-	uploadFileMaxSize = 20 << 20 // 20 MB
-)
-
 type FileHandler struct {
-	fileService fileservice.FileService
+	fileService   fileservice.FileService
+	maxUploadSize int64 // Maximum upload size in bytes
 }
 
 // DBFileService interface since this handler is db-specific
@@ -42,9 +39,11 @@ type DBFileService interface {
 	GetBlobContent(fileName string) ([]byte, error)
 }
 
-func NewFileHandler(fileService fileservice.FileService) *FileHandler {
+// NewFileHandler creates a new FileHandler with the specified file service and max upload size.
+func NewFileHandler(fileService fileservice.FileService, maxUploadSizeMB int) *FileHandler {
 	return &FileHandler{
-		fileService: fileService,
+		fileService:   fileService,
+		maxUploadSize: int64(maxUploadSizeMB) << 20, // Convert MB to bytes
 	}
 }
 
@@ -62,7 +61,7 @@ func (h *FileHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Defense-in-depth: limit request body size
-	r.Body = http.MaxBytesReader(w, r.Body, uploadFileMaxSize)
+	r.Body = http.MaxBytesReader(w, r.Body, h.maxUploadSize)
 	content, err := io.ReadAll(r.Body)
 	if err != nil {
 		slog.Error("Error reading file content from request body", "error", err)

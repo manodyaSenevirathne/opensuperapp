@@ -60,6 +60,9 @@ type Config struct {
 	// User Service
 	UserServiceType string
 
+	// File Upload
+	UploadFileMaxSizeMB int // Maximum file upload size in megabytes
+
 	// rawEnv stores all environment variables for plugin configuration.
 	// This field is unexported to prevent direct access to sensitive data.
 	// Use GetPluginConfig() to access filtered configuration by prefix.
@@ -111,6 +114,9 @@ func Load() *Config {
 
 		// User Service
 		UserServiceType: getEnv("USER_SERVICE_TYPE", "db"),
+
+		// File Upload
+		UploadFileMaxSizeMB: getEnvInt("UPLOAD_FILE_MAX_SIZE_MB", 20),
 
 		rawEnv: rawEnv,
 	}

@@ -36,7 +36,7 @@ func NewUserRouter(db *gorm.DB, fcmService services.NotificationService, fileSer
 	r.Mount("/micro-apps", MicroAppRoutes(db))
 	r.Mount("/device-tokens", deviceTokenRoutes(db, fcmService))
 	r.Mount("/token", TokenRoutes(db, cfg))
-	r.Mount("/files", fileRoutes(fileService))
+	r.Mount("/files", fileRoutes(fileService, cfg))
 	r.Mount("/users", userRoutes(db, userService))
 	r.Mount("/user-info", userInfoRoutes(userService))
 
@@ -66,17 +66,17 @@ func NewNoAuthRouter(db *gorm.DB, cfg *config.Config, serviceTokenValidator serv
 	r.Get("/.well-known/jwks.json", tokenHandler.GetJWKS)
 
 	// Other public routes
-	r.Mount("/public", PublicRoutes(fileService))
+	r.Mount("/public", PublicRoutes(fileService, cfg))
 
 	return r
 }
 
 // PublicRoutes sets up a sub-router for public routes
-func PublicRoutes(fileService fileservice.FileService) http.Handler {
+func PublicRoutes(fileService fileservice.FileService, cfg *config.Config) http.Handler {
 	r := chi.NewRouter()
 
 	// GET /public/micro-app-files/download/{fileName}
-	r.Get("/micro-app-files/download/{fileName}", handler.NewFileHandler(fileService).DownloadMicroAppFile)
+	r.Get("/micro-app-files/download/{fileName}", handler.NewFileHandler(fileService, cfg.UploadFileMaxSizeMB).DownloadMicroAppFile)
 
 	return r
 }
@@ -144,10 +144,10 @@ func TokenRoutes(db *gorm.DB, cfg *config.Config) http.Handler {
 }
 
 // fileRoutes sets up a sub-router for file operations.
-func fileRoutes(fileService fileservice.FileService) http.Handler {
+func fileRoutes(fileService fileservice.FileService, cfg *config.Config) http.Handler {
 	r := chi.NewRouter()
 
-	fileHandler := handler.NewFileHandler(fileService)
+	fileHandler := handler.NewFileHandler(fileService, cfg.UploadFileMaxSizeMB)
 
 	// POST /files?fileName=xxx
 	r.Post("/", fileHandler.UploadFile)

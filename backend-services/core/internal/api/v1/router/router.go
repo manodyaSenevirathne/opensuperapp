@@ -34,7 +34,7 @@ func NewUserRouter(db *gorm.DB, fcmService services.NotificationService, fileSer
 	r := chi.NewRouter()
 
 	r.Mount("/micro-apps", MicroAppRoutes(db))
-	r.Mount("/device-tokens", DeviceTokenRoutes(db, fcmService))
+	r.Mount("/device-tokens", deviceTokenRoutes(db, fcmService))
 	r.Mount("/token", TokenRoutes(db, cfg))
 	r.Mount("/files", fileRoutes(fileService))
 	r.Mount("/users", userRoutes(db, userService))

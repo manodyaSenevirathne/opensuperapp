@@ -85,6 +85,59 @@ func (h *NotificationHandler) RegisterDeviceToken(w http.ResponseWriter, r *http
 	w.WriteHeader(http.StatusCreated)
 }
 
+func (h *NotificationHandler) DeactivateDeviceToken(w http.ResponseWriter, r *http.Request) {
+	userInfo, ok := auth.GetUserInfo(r.Context())
+	if !ok {
+		http.Error(w, errUserInfoNotFound, http.StatusUnauthorized)
+		return
+	}
+	if !validateContentType(w, r) {
+		return
+	}
+	limitRequestBody(w, r, 0)
+	var req dto.DeactivateDeviceTokenRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, errInvalidRequestBody, http.StatusBadRequest)
+		return
+	}
+	if !validateStruct(w, &req) {
+		return
+	}
+	if req.Email != userInfo.Email {
+		http.Error(w, errEmailDoesNotMatchAuthUser, http.StatusForbidden)
+		return
+	}
+
+	// Find and deactivate the device token
+	var deviceToken models.DeviceToken
+	result := h.db.Where("user_email = ? AND device_token = ? AND platform = ?",
+		req.Email, req.Token, req.Platform).
+		First(&deviceToken)
+
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			slog.Warn("Device token not found for deactivation", "email", req.Email, "platform", req.Platform)
+			http.Error(w, errDeviceTokenNotFound, http.StatusNotFound)
+			return
+		}
+		slog.Error("Failed to find device token", "error", result.Error, "email", req.Email)
+		http.Error(w, errFailedToDeactivateDeviceToken, http.StatusInternalServerError)
+		return
+	}
+
+	// Update to deactivate
+	deviceToken.IsActive = false
+	if err := h.db.Save(&deviceToken).Error; err != nil {
+		slog.Error("Failed to deactivate device token", "error", err, "email", req.Email)
+		http.Error(w, errFailedToDeactivateDeviceToken, http.StatusInternalServerError)
+		return
+	}
+
+	slog.Info("Device token deactivated successfully", "email", req.Email, "platform", req.Platform)
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Device token deactivated successfully"})
+}
+
 func (h *NotificationHandler) SendNotification(w http.ResponseWriter, r *http.Request) {
 	if h.fcmService == nil {
 		http.Error(w, errNotificationServiceNotAvailable, http.StatusServiceUnavailable)

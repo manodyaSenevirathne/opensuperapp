@@ -26,6 +26,8 @@ import { Alert } from "react-native";
 import { recordAuthLogout } from "@/telemetry/metrics";
 import { clearAuthDataFromSecureStore } from "@/utils/authTokenStore";
 import { clearAllExchangedTokens } from "@/utils/exchangedTokenStore";
+import { unregisterDeviceToken } from "@/services/notificationApiService";
+import { getDevicePushToken } from "@/services/notificationService";
 
 // Logout user
 export const performLogout = createAsyncThunk(
@@ -34,6 +36,19 @@ export const performLogout = createAsyncThunk(
     try {
       const state = getState() as RootState;
       const appIds = state.apps.apps.map((app) => app.appId);
+      
+      // Deactivate device token before logout
+      try {
+        const userEmail = state.auth.email;
+        const deviceToken = await getDevicePushToken();
+        
+        if (userEmail && deviceToken) {
+          await unregisterDeviceToken(userEmail, deviceToken, async () => {
+          });
+        }
+      } catch (tokenError) {
+        console.error("Failed to deactivate device token:", tokenError);
+      }
       
       await logout(); // Call Asgardeo logout
       recordAuthLogout(); // Record logout metric

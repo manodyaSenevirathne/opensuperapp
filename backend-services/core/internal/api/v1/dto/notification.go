@@ -21,6 +21,12 @@ type RegisterDeviceTokenRequest struct {
 	Platform string `json:"platform" validate:"required,oneof=ios android"`
 }
 
+type DeactivateDeviceTokenRequest struct {
+	Email    string `json:"email" validate:"required,email"`
+	Token    string `json:"token" validate:"required"`
+	Platform string `json:"platform" validate:"required,oneof=ios android"`
+}
+
 type SendNotificationRequest struct {
 	UserEmails []string               `json:"userEmails" validate:"required,min=1,dive,email"`
 	Title      string                 `json:"title" validate:"required"`

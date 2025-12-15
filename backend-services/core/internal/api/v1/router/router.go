@@ -116,6 +116,9 @@ func deviceTokenRoutes(db *gorm.DB, fcmService services.NotificationService) htt
 	// POST /device-tokens
 	r.Post("/", notificationHandler.RegisterDeviceToken)
 
+	// DELETE /device-tokens
+	r.Delete("/", notificationHandler.DeactivateDeviceToken)
+
 	return r
 }
 

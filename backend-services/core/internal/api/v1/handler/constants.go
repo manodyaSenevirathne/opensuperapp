@@ -100,6 +100,8 @@ const (
 	// Notification Handler Error Messages
 	errEmailDoesNotMatchAuthUser       = "email does not match authenticated user"
 	errFailedToRegisterDeviceToken     = "failed to register device token"
+	errFailedToDeactivateDeviceToken   = "failed to deactivate device token"
+	errDeviceTokenNotFound             = "device token not found"
 	errNotificationServiceNotAvailable = "notification service not available"
 	errFailedToFetchDeviceTokens       = "failed to fetch device tokens"
 	errFailedToSendNotifications       = "failed to send notifications"

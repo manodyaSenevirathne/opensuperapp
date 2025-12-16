@@ -19,6 +19,7 @@ import (
 	"net/http"
 
 	"github.com/opensuperapp/opensuperapp/backend-services/core/internal/api/v1/handler"
+	"github.com/opensuperapp/opensuperapp/backend-services/core/internal/auth/rbac"
 	"github.com/opensuperapp/opensuperapp/backend-services/core/internal/config"
 	"github.com/opensuperapp/opensuperapp/backend-services/core/internal/services"
 
@@ -95,14 +96,20 @@ func MicroAppRoutes(db *gorm.DB) http.Handler {
 	// GET /micro-apps/{appID}
 	r.Get("/{appID}", microappHandler.GetByID)
 
-	// POST /micro-apps
-	r.Post("/", microappHandler.Upsert)
+	// POST /micro-apps (admin only)
+	r.
+		With(rbac.RequireGroups(rbac.GroupAdmin)).
+		Post("/", microappHandler.Upsert)
 
-	// PUT /micro-apps/deactivate/{appID}
-	r.Put("/deactivate/{appID}", microappHandler.Deactivate)
+	// PUT /micro-apps/deactivate/{appID} (admin only)
+	r.
+		With(rbac.RequireGroups(rbac.GroupAdmin)).
+		Put("/deactivate/{appID}", microappHandler.Deactivate)
 
-	// POST /micro-apps/{appID}/versions
-	r.Post("/{appID}/versions", microappVersionHandler.UpsertVersion)
+	// POST /micro-apps/{appID}/versions (admin only)
+	r.
+		With(rbac.RequireGroups(rbac.GroupAdmin)).
+		Post("/{appID}/versions", microappVersionHandler.UpsertVersion)
 
 	return r
 }
@@ -153,10 +160,14 @@ func fileRoutes(fileService fileservice.FileService, cfg *config.Config) http.Ha
 	fileHandler := handler.NewFileHandler(fileService, cfg.UploadFileMaxSizeMB)
 
 	// POST /files?fileName=xxx
-	r.Post("/", fileHandler.UploadFile)
+	r.
+		With(rbac.RequireGroups(rbac.GroupAdmin)).
+		Post("/", fileHandler.UploadFile)
 
 	// DELETE /files?fileName=xxx
-	r.Delete("/", fileHandler.DeleteFile)
+	r.
+		With(rbac.RequireGroups(rbac.GroupAdmin)).
+		Delete("/", fileHandler.DeleteFile)
 
 	return r
 }
@@ -182,13 +193,19 @@ func userRoutes(db *gorm.DB, userService userservice.UserService) http.Handler {
 	userHandler := handler.NewUserHandler(userService)
 
 	// GET /users
-	r.Get("/", userHandler.GetAll)
+	r.
+		With(rbac.RequireGroups(rbac.GroupAdmin)).
+		Get("/", userHandler.GetAll)
 
 	// POST /users
-	r.Post("/", userHandler.Upsert)
+	r.
+		With(rbac.RequireGroups(rbac.GroupAdmin)).
+		Post("/", userHandler.Upsert)
 
 	// DELETE /users/{email}
-	r.Delete("/{email}", userHandler.Delete)
+	r.
+		With(rbac.RequireGroups(rbac.GroupAdmin)).
+		Delete("/{email}", userHandler.Delete)
 
 	// GET /users/app-configs
 	r.Get("/app-configs", userConfigHandler.GetAppConfigs)

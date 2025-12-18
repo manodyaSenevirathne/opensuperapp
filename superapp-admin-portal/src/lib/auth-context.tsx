@@ -86,6 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       loadUserInfo={true}
       automaticSilentRenew={false}
       onSigninCallback={onSigninCallback}
+      onRemoveUser={onSigninCallback}
     >
       {children}
     </OidcProvider>
@@ -168,7 +169,19 @@ export function useAuth(): AuthContextValue {
       } catch {}
       return;
     }
-    await auth.signoutRedirect();
+    
+    // First remove user from local storage
+    await auth.removeUser();
+    
+    // Then perform the redirect to logout endpoint
+    try {
+      await auth.signoutRedirect();
+    } catch (error) {
+      // If signoutRedirect fails, at least we've removed the user locally
+      console.error("Logout redirect failed:", error);
+      // Force navigation to home
+      window.location.href = window.location.origin;
+    }
   };
 
   return useMemo(

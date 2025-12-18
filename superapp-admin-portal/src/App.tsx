@@ -23,6 +23,20 @@ function App() {
   const { showNotification } = useNotification();
   const hasShownLoginNotification = useRef(false);
 
+  // Clean up URL after logout redirect from Asgardeo
+  useEffect(() => {
+    if (!state.isLoading && !state.isAuthenticated) {
+      const url = new URL(window.location.href);
+      // Check if we have any auth-related params that need cleanup
+      if (url.searchParams.has('state') || url.searchParams.has('session_state')) {
+        url.searchParams.delete('state');
+        url.searchParams.delete('session_state');
+        url.searchParams.delete('code');
+        window.history.replaceState({}, document.title, url.pathname);
+      }
+    }
+  }, [state.isLoading, state.isAuthenticated]);
+
   // Initialize API service with token getter and sign out function
   useEffect(() => {
     if (state.isAuthenticated) {

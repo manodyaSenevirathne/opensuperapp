@@ -24,7 +24,7 @@ import {
   writeAsStringAsync,
 } from "expo-file-system";
 import JSZip from "jszip";
-import { AppDispatch } from "@/context/store";
+import { AppDispatch, store } from "@/context/store";
 import {
   addDownloading,
   MicroApp,
@@ -44,7 +44,10 @@ import {
   DEFAULT_VIEWING_MODE,
 } from "@/constants/Constants";
 import { UpdateUserConfiguration } from "./userConfigService";
-import { getAccessToken } from "@/utils/requestHandler";
+
+
+const accessToken = store.getState().auth.accessToken;
+
 // File handle services
 export const downloadMicroApp = async (
   dispatch: AppDispatch,
@@ -78,7 +81,6 @@ const downloadAndSaveFile = async (appId: string, downloadUrl: string) => {
   if (!(await getInfoAsync(customDir)).exists) {
     await makeDirectoryAsync(customDir, { intermediates: true });
   }
-  let accessToken = await getAccessToken();
 
   if (!accessToken) {
     throw new Error("Access token not found");

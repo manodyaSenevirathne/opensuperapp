@@ -13,12 +13,11 @@
 // KIND, either express or implied.  See the License for the
 // specific language governing permissions and limitations
 // under the License.
-import { AUTH_DATA } from "@/constants/Constants";
 import { refreshAccessToken } from "@/services/authService";
 import axios, { AxiosRequestConfig } from "axios";
 import { jwtDecode } from "jwt-decode";
 import dayjs from "dayjs";
-import * as secureStorage from "@/utils/secureStorage";
+import { store } from "@/context/store";
 import {
   recordApiRequest,
   recordApiRequestDuration,
@@ -46,7 +45,8 @@ export const apiRequest = async (
   config: AxiosRequestConfig,
   onLogout: () => Promise<void>
 ) => {
-  let accessToken = await getAccessToken(); // Get stored access token
+
+  let accessToken = store.getState().auth.accessToken;
   // If no access token, return early
   if (!accessToken) return;
 
@@ -123,11 +123,4 @@ const isAccessTokenExpired = (accessToken: string): boolean => {
   } catch {
     return true; // Assume expired if decoding fails
   }
-};
-
-// Helper function to get the stored access token
-export const getAccessToken = async (): Promise<string> => {
-  const storedData = await secureStorage.getItem(AUTH_DATA);
-  if (!storedData) return "";
-  return JSON.parse(storedData)?.accessToken || "";
 };

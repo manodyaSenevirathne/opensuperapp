@@ -27,6 +27,7 @@ type UserContextClaims struct {
 	jwt.RegisteredClaims
 	MicroappID string `json:"microapp_id"`
 	Scopes     string `json:"scope,omitempty"`
+	Email      string `json:"email"`
 }
 
 // GenerateUserToken generates a token for a microapp frontend with user context
@@ -44,6 +45,7 @@ func (s *TokenService) GenerateUserToken(userEmail, microappID, scopes string) (
 		},
 		MicroappID: microappID,
 		Scopes:     scopes,
+		Email:      userEmail,
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)

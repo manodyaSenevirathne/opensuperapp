@@ -60,3 +60,41 @@ jest.mock('expo-router', () => ({
   useSegments: () => [],
   usePathname: () => '/',
 }));
+
+// Mock expo-notifications
+jest.mock('expo-notifications', () => ({
+  addNotificationReceivedListener: jest.fn(),
+  addNotificationResponseReceivedListener: jest.fn(),
+  removeNotificationSubscription: jest.fn(),
+  getPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'granted' })),
+  requestPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'granted' })),
+  getDevicePushTokenAsync: jest.fn(() => Promise.resolve({ data: 'test-device-token' })),
+  getExpoPushTokenAsync: jest.fn(() => Promise.resolve({ data: 'test-expo-token' })),
+  setNotificationChannelAsync: jest.fn(),
+  setNotificationHandler: jest.fn(),
+  AndroidImportance: {
+    MAX: 5,
+  },
+}));
+
+// Mock expo-device
+jest.mock('expo-device', () => ({
+  isDevice: true,
+  brand: 'Apple',
+  manufacturer: 'Apple',
+  modelName: 'iPhone 12',
+  osName: 'iOS',
+  osVersion: '14.4',
+}));
+
+// Mock expo-constants
+jest.mock('expo-constants', () => ({
+  expoConfig: {
+    extra: {
+      eas: {
+        projectId: 'test-project-id',
+      },
+    },
+  },
+}));
+

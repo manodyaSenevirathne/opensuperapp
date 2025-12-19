@@ -17,7 +17,6 @@ import { refreshAccessToken } from "@/services/authService";
 import axios, { AxiosRequestConfig } from "axios";
 import { jwtDecode } from "jwt-decode";
 import dayjs from "dayjs";
-import { store } from "@/context/store";
 import {
   recordApiRequest,
   recordApiRequestDuration,
@@ -46,6 +45,8 @@ export const apiRequest = async (
   onLogout: () => Promise<void>
 ) => {
 
+  // Using dynamic require to avoid circular dependency with store
+  const { store } = require("@/context/store");
   let accessToken = store.getState().auth.accessToken;
   // If no access token, return early
   if (!accessToken) return;

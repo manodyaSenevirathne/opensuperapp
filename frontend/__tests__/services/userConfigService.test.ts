@@ -18,7 +18,10 @@ import * as secureStorage from '@/utils/secureStorage';
 import { store } from '@/context/store';
 
 jest.mock('@/utils/secureStorage');
-jest.mock('@/utils/requestHandler');
+import { apiRequest } from '@/utils/requestHandler';
+jest.mock('@/utils/requestHandler', () => ({
+  apiRequest: jest.fn(),
+}));
 jest.mock('@/context/store', () => ({
   store: {
     getState: jest.fn(),
@@ -33,75 +36,88 @@ describe('userConfigService', () => {
   });
 
   describe('UpdateUserConfiguration', () => {
+    const APP_LIST_CONFIG_KEY = 'superapp.apps.list';
+
     it('should update user configuration for downloaded app', async () => {
       const mockUserConfigs = [
         {
+          configKey: APP_LIST_CONFIG_KEY,
+          configValue: [],
           email: 'test@example.com',
-          downloadedAppIds: [],
+          isActive: 1,
         },
       ];
 
-      (secureStorage.getItem as jest.Mock).mockResolvedValue(
-        JSON.stringify(mockUserConfigs)
-      );
+      (secureStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify(mockUserConfigs));
       (secureStorage.setItem as jest.Mock).mockResolvedValue(undefined);
+      (apiRequest as jest.Mock).mockResolvedValue({ status: 201 });
       (store.getState as jest.Mock).mockReturnValue({
         auth: { email: 'test@example.com' },
       });
 
-      await expect(
-        UpdateUserConfiguration('test-app-id', 'downloaded', mockLogout)
-      ).resolves.not.toThrow();
-
-      expect(secureStorage.getItem).toHaveBeenCalled();
+      const result = await UpdateUserConfiguration('test-app-id', 'downloaded', mockLogout);
+      expect(result).toBe(true);
+      expect(secureStorage.setItem).toHaveBeenCalled();
     });
 
-    it('should handle not-downloaded action', async () => {
+    it('should filter out app for not-downloaded action', async () => {
       const mockUserConfigs = [
         {
+          configKey: APP_LIST_CONFIG_KEY,
+          configValue: ['test-app-id'],
           email: 'test@example.com',
-          downloadedAppIds: ['test-app-id'],
+          isActive: 1,
         },
       ];
 
-      (secureStorage.getItem as jest.Mock).mockResolvedValue(
-        JSON.stringify(mockUserConfigs)
-      );
+      (secureStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify(mockUserConfigs));
       (secureStorage.setItem as jest.Mock).mockResolvedValue(undefined);
-      (store.getState as jest.Mock).mockReturnValue({
-        auth: { email: 'test@example.com' },
-      });
+      (apiRequest as jest.Mock).mockResolvedValue({ status: 201 });
 
-      await expect(
-        UpdateUserConfiguration('test-app-id', 'not-downloaded', mockLogout)
-      ).resolves.not.toThrow();
-
-      expect(secureStorage.getItem).toHaveBeenCalled();
+      const result = await UpdateUserConfiguration('test-app-id', 'not-downloaded', mockLogout);
+      expect(result).toBe(true);
+      // Verify filter happened
+      const lastSet = JSON.parse((secureStorage.setItem as jest.Mock).mock.calls[0][1]);
+      expect(lastSet[0].configValue).not.toContain('test-app-id');
     });
 
-    it('should handle empty user configs', async () => {
+    it('should return false if email missing when configs empty', async () => {
       (secureStorage.getItem as jest.Mock).mockResolvedValue(null);
-      (secureStorage.setItem as jest.Mock).mockResolvedValue(undefined);
-      (store.getState as jest.Mock).mockReturnValue({
-        auth: { email: 'test@example.com' },
-      });
+      (store.getState as jest.Mock).mockReturnValue({ auth: {} }); // No email
 
-      await expect(
-        UpdateUserConfiguration('test-app-id', 'downloaded', mockLogout)
-      ).resolves.not.toThrow();
+      const result = await UpdateUserConfiguration('app1', 'downloaded', mockLogout);
+      expect(result).toBe(false);
+    });
+
+    it('should initialize configs if empty', async () => {
+      (secureStorage.getItem as jest.Mock).mockResolvedValue(null);
+      (store.getState as jest.Mock).mockReturnValue({ auth: { email: 'e' } });
+      (apiRequest as jest.Mock).mockResolvedValue({ status: 201 });
+
+      await UpdateUserConfiguration('app1', 'downloaded', mockLogout);
+      expect(secureStorage.setItem).toHaveBeenCalled();
+    });
+
+    it('should warn and rollback if status not 201', async () => {
+      const mockUserConfigs = [
+        {
+          configKey: APP_LIST_CONFIG_KEY,
+          configValue: [],
+          email: 'e',
+          isActive: 1,
+        },
+      ];
+      (secureStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify(mockUserConfigs));
+      (apiRequest as jest.Mock).mockResolvedValue({ status: 500 });
+
+      await UpdateUserConfiguration('app1', 'downloaded', mockLogout);
+      // Verify second setItem (rollback) happened
+      expect(secureStorage.setItem).toHaveBeenCalledTimes(2);
     });
 
     it('should handle errors gracefully', async () => {
-      (secureStorage.getItem as jest.Mock).mockRejectedValue(
-        new Error('Storage error')
-      );
-
-      const result = await UpdateUserConfiguration(
-        'test-app-id',
-        'downloaded',
-        mockLogout
-      );
-
+      (secureStorage.getItem as jest.Mock).mockRejectedValue(new Error('Storage error'));
+      const result = await UpdateUserConfiguration('app1', 'downloaded', mockLogout);
       expect(result).toBe(false);
     });
   });

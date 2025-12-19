@@ -98,3 +98,17 @@ jest.mock('expo-constants', () => ({
   },
 }));
 
+// Mock expo-media-library
+jest.mock('expo-media-library', () => ({
+  createAssetAsync: jest.fn(),
+  createAlbumAsync: jest.fn(),
+  getAlbumAsync: jest.fn(),
+  requestPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'granted' })),
+}));
+
+// Mock expo-sharing
+jest.mock('expo-sharing', () => ({
+  shareAsync: jest.fn(),
+  isAvailableAsync: jest.fn(() => Promise.resolve(true)),
+}));
+

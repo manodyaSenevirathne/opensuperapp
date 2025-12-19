@@ -24,6 +24,21 @@ import { restoreAuth } from "@/context/slices/authSlice";
 import { getVersions } from "@/context/slices/versionSlice";
 import { setUserInfo } from "@/context/slices/userInfoSlice";
 
+jest.mock("@/constants/Constants", () => ({
+  APPS: "APPS",
+  USER_INFO: "USER_INFO",
+}));
+
+
+jest.mock("@/context/slices/appSlice", () => ({
+  setApps: jest.fn((apps) => ({ type: "apps/setApps", payload: apps })),
+}));
+
+jest.mock("@/context/slices/userInfoSlice", () => ({
+  setUserInfo: jest.fn((info) => ({ type: "userInfo/setUserInfo", payload: info })),
+}));
+
+
 jest.mock("react-redux", () => ({
   ...jest.requireActual("react-redux"),
   useDispatch: jest.fn(),
